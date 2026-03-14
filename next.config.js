@@ -36,9 +36,6 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
-  devServer: {
-    port: 3003,
-  },
   async rewrites() {
     return [
       {
