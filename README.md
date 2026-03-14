@@ -1,217 +1,235 @@
-# 智能病历录入系统
+# 智能病历平台
 
-## 项目简介
+智能病历源头生成与全流程质控平台
 
-智能病历录入系统是一个生产级的Web应用，专为医疗场景设计，支持离线使用、移动端适配、语音输入等功能。
+## 项目信息
 
-## 核心特性
+- **平台名称**：智能病历平台
+- **版本**：1.0.0
+- **开发者**：周宏锋
+- **联系电话**：13609737049
+- **电子邮箱**：13609737049@139.com
 
-### PWA 支持
-- ✅ 离线工作模式
-- ✅ 移动端适配
-- ✅ 可安装为桌面应用
-- ✅ 后台同步
+## 功能特性
 
-### 智能录入
-- 🎤 语音输入支持
-- 📷 拍照上传
-- 💾 自动保存
-- 🔄 离线数据同步
+### 核心功能
+- ✅ 患者信息管理（创建、编辑、查看、删除）
+- ✅ 病历管理（创建、编辑、查看、审核）
+- ✅ 语音输入（支持中文语音识别）
+- ✅ 病历状态管理（草稿、已提交、已审核、已驳回）
+- ✅ 搜索和分页
+- ✅ 数据导出（JSON/CSV）
+- ✅ 数据统计
+- ✅ 打印功能
+- ✅ Toast 通知
+- ✅ 响应式设计
 
-### UI 组件
-- 🎨 现代化设计
-- 📱 响应式布局
-- 🌓 深色模式支持
-- ♿ 无障碍访问
+### 工作流程
+1. 医生录入患者信息和病历 → 保存为草稿
+2. 在待办事项中查看待确认的草稿病历
+3. 提交病历进行审核
+4. 审核人员审核病历（通过或驳回）
+5. 已审核的病历可以打印
+6. 在统计仪表板查看数据概览
+7. 导出数据进行备份或分析
+
+## 技术栈
+
+- **前端框架**：Next.js 14
+- **编程语言**：TypeScript
+- **样式框架**：Tailwind CSS
+- **UI 组件**：Radix UI
+- **状态管理**：Zustand
+- **ORM**：Prisma
+- **数据库**：PostgreSQL（生产）/ SQLite（开发）
+- **语音识别**：Web Speech API
 
 ## 快速开始
 
-### 环境要求
-- Node.js 18+
-- npm 或 yarn
-- Docker (可选，用于部署)
+### 本地开发
 
-### 安装依赖
+1. 克隆仓库
+```bash
+git clone <your-repo-url>
+cd intelligent-medical-platform
+```
+
+2. 安装依赖
 ```bash
 npm install
 ```
 
-### 初始化数据库
+3. 配置环境变量
+```bash
+cp .env.example .env
+```
+
+编辑 `.env` 文件：
+```
+DATABASE_URL="file:./dev.db"
+```
+
+4. 初始化数据库
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-### 启动开发服务器
+5. 启动开发服务器
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000 查看应用
+访问 http://localhost:3002
 
-## 部署
+### 生产部署
 
-### 使用 Docker 部署
+#### 方法一：Netlify 部署
+
+1. 准备数据库
+   - 推荐：[Supabase](https://supabase.com)（免费）
+   - 或：[Neon](https://neon.tech)（免费）
+
+2. 创建 GitHub 仓库
+   - 访问 [GitHub](https://github.com)
+   - 创建新仓库：`intelligent-medical-platform`
+
+3. 推送代码到 GitHub
 ```bash
-# Linux/Mac
-chmod +x deploy.sh
-./deploy.sh
-
-# Windows
-docker-compose up -d
+git remote add origin <your-github-repo-url>
+git branch -M main
+git push -u origin main
 ```
 
-### 手动部署
-```bash
-# 构建生产版本
-npm run build
+4. 连接 Netlify
+   - 登录 [Netlify](https://app.netlify.com)
+   - 点击 "Add new site" > "Import an existing project"
+   - 选择 GitHub 仓库
+   - 配置环境变量：
+     ```
+     DATABASE_URL=postgresql://user:password@host:5432/database
+     NODE_ENV=production
+     ```
+   - 点击 "Deploy site"
 
-# 启动生产服务器
-npm start
+5. 初始化生产数据库
+```bash
+npm run db:push
 ```
+
+详细部署说明请查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+#### 方法二：Vercel 部署
+
+1. 推送代码到 GitHub
+2. 访问 [Vercel](https://vercel.com)
+3. 点击 "New Project"
+4. 导入 GitHub 仓库
+5. 配置环境变量
+6. 点击 "Deploy"
 
 ## 项目结构
 
 ```
-.
-├── app/                          # Next.js App Router
-│   ├── api/                      # API 路由
-│   │   ├── patients/             # 患者管理 API
-│   │   │   ├── route.ts         # 患者列表、创建患者
-│   │   │   └── [id]/route.ts    # 患者详情、更新、删除
-│   │   ├── records/              # 病历管理 API
-│   │   │   ├── route.ts         # 病历列表、创建病历
-│   │   │   └── [id]/route.ts    # 病历详情、更新、删除
-│   │   └── todos/               # 待办事项 API
-│   │       └── route.ts         # 待办列表
-│   ├── globals.css               # 全局样式
-│   ├── layout.tsx               # 根布局
-│   ├── page.tsx                 # 首页（病历录入）
-│   ├── patients/                # 患者管理页面
-│   │   ├── page.tsx            # 患者列表
-│   │   ├── new/page.tsx        # 新建患者
-│   │   └── [id]/page.tsx      # 患者详情
-│   ├── todos/                   # 待办事项页面
-│   │   └── page.tsx           # 待办列表
-│   └── records/                 # 病历管理页面
-│       └── [id]/page.tsx       # 病历详情
-├── components/                  # React 组件
-│   ├── ui/                     # UI 组件库
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── card.tsx
-│   │   ├── label.tsx
-│   │   ├── textarea.tsx
-│   │   ├── select.tsx
-│   │   ├── dialog.tsx
-│   │   ├── badge.tsx
-│   │   ├── toast.tsx
-│   │   └── toaster.tsx
-│   └── theme-provider.tsx      # 主题提供者
-├── hooks/                      # 自定义 Hooks
-│   └── use-toast.ts            # Toast 提示 Hook
-├── lib/                        # 工具函数
-│   ├── utils.ts                # 通用工具函数
-│   ├── date-utils.ts           # 日期处理函数
-│   └── validation.ts           # 数据验证函数
-├── store/                      # 状态管理
-│   ├── patient-store.ts        # 患者状态管理
-│   └── record-store.ts         # 病历状态管理
-├── types/                      # TypeScript 类型定义
-│   └── index.ts               # 通用类型定义
-├── prisma/                     # 数据库配置
-│   └── schema.prisma           # 数据模型
-├── public/                     # 静态资源
-│   ├── manifest.json           # PWA 配置
-│   ├── sw.js                  # Service Worker
-│   └── offline.html           # 离线页面
-├── package.json                # 项目依赖
-├── tsconfig.json              # TypeScript 配置
-├── tailwind.config.js         # Tailwind CSS 配置
-├── next.config.js             # Next.js 配置
-├── Dockerfile                 # Docker 镜像配置
-├── docker-compose.yml         # Docker Compose 配置
-├── deploy.sh                 # Linux/Mac 部署脚本
-├── start.bat                 # Windows 启动脚本
-└── README.md                 # 项目文档
+intelligent-medical-platform/
+├── app/                    # Next.js 应用目录
+│   ├── about/             # 关于页面
+│   ├── api/               # API 路由
+│   │   ├── export/        # 数据导出 API
+│   │   ├── patients/      # 患者 API
+│   │   ├── records/       # 病历 API
+│   │   ├── stats/         # 统计 API
+│   │   └── todos/         # 待办事项 API
+│   ├── dashboard/         # 统计仪表板
+│   ├── patients/          # 患者管理页面
+│   ├── records/           # 病历管理页面
+│   └── todos/            # 待办事项页面
+├── components/           # React 组件
+│   └── ui/              # UI 组件
+├── hooks/               # 自定义 Hooks
+├── lib/                 # 工具函数
+├── prisma/              # Prisma 配置
+│   └── schema.prisma   # 数据库模型
+├── public/              # 静态资源
+└── types/              # TypeScript 类型定义
 ```
 
-## 技术栈
+## 数据库模型
 
-- **框架**: Next.js 14
-- **UI**: React 18 + Tailwind CSS
-- **数据库**: Prisma + SQLite/PostgreSQL
-- **状态管理**: Zustand
-- **表单**: React Hook Form + Zod
-- **PWA**: next-pwa
-- **图标**: Lucide React
+### Patient（患者）
+- id: 唯一标识符
+- name: 姓名
+- age: 年龄
+- gender: 性别
+- idCard: 身份证号
+- phone: 联系电话
+- admissionDate: 入院日期
+- createdAt: 创建时间
+- updatedAt: 更新时间
 
-## 功能说明
+### MedicalRecord（病历）
+- id: 唯一标识符
+- patientId: 患者ID（外键）
+- chiefComplaint: 主诉
+- presentIllness: 现病史
+- pastHistory: 既往史
+- familyHistory: 家族史
+- physicalExam: 体格检查
+- diagnosis: 诊断
+- treatment: 诊疗计划
+- status: 状态（draft/submitted/approved/rejected）
+- createdAt: 创建时间
+- updatedAt: 更新时间
 
-### 患者管理
-- 新建患者信息
-- 查看患者列表
-- 搜索患者（支持姓名、身份证号、电话搜索）
-- 查看患者详情
-- 编辑患者信息
-- 删除患者
+## API 接口
 
-### 病历管理
-- 新建病历记录
-- 查看病历列表
-- 查看病历详情
-- 编辑病历信息
-- 删除病历
-- 病历状态管理（草稿、已提交、已审核、已驳回）
+### 患者 API
+- `GET /api/patients` - 获取患者列表
+- `POST /api/patients` - 创建患者
+- `GET /api/patients/[id]` - 获取患者详情
+- `PUT /api/patients/[id]` - 更新患者
+- `DELETE /api/patients/[id]` - 删除患者
 
-### 待办事项
-- 查看待确认病历
-- 查看待审核病历
-- 按优先级筛选
-- 快速跳转到详情
+### 病历 API
+- `GET /api/records` - 获取病历列表
+- `POST /api/records` - 创建病历
+- `GET /api/records/[id]` - 获取病历详情
+- `PUT /api/records/[id]` - 更新病历
+- `DELETE /api/records/[id]` - 删除病历
 
-### 病历录入
-- 主诉录入
-- 现病史
-- 既往史
-- 家族史
-- 体格检查
-- 初步诊断
-- 诊疗计划
+### 其他 API
+- `GET /api/stats` - 获取统计数据
+- `GET /api/todos` - 获取待办事项
+- `GET /api/export` - 导出数据
 
-### 智能功能
-- 语音转文字
-- 自动保存
-- 离线缓存
-- 数据同步
-- 表单验证
-- 数据格式化
+## 开发命令
 
-## 开发指南
-
-### 添加新的 API 路由
-在 `app/api/` 目录下创建新的路由文件
-
-### 添加新的 UI 组件
-在 `components/ui/` 目录下创建新的组件文件
-
-### 修改数据库模型
-编辑 `prisma/schema.prisma` 文件，然后运行：
 ```bash
-npm run db:generate
-npm run db:push
+# 开发
+npm run dev
+
+# 构建
+npm run build
+
+# 启动生产服务器
+npm start
+
+# 代码检查
+npm run lint
+
+# 数据库
+npm run db:generate    # 生成 Prisma Client
+npm run db:push       # 推送数据库结构
+npm run db:migrate     # 运行数据库迁移
+npm run db:studio     # 打开 Prisma Studio
 ```
 
-## 常见问题
+## 浏览器支持
 
-### Q: 如何启用语音输入？
-A: 语音输入功能需要浏览器支持 Web Speech API，推荐使用 Chrome 或 Edge 浏览器。
-
-### Q: 离线模式下数据如何保存？
-A: 离线模式下数据会保存在本地 IndexedDB 中，联网后会自动同步到服务器。
-
-### Q: 如何自定义主题颜色？
-A: 修改 `app/globals.css` 中的 CSS 变量即可。
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- 语音识别需要支持的浏览器
 
 ## 许可证
 
@@ -219,4 +237,17 @@ MIT License
 
 ## 联系方式
 
-如有问题或建议，请提交 Issue。
+- **开发者**：周宏锋
+- **电话**：13609737049
+- **邮箱**：13609737049@139.com
+
+## 更新日志
+
+### v1.0.0 (2024-01-15)
+- ✅ 初始版本发布
+- ✅ 完整的病历管理功能
+- ✅ 语音输入支持
+- ✅ 数据导出功能
+- ✅ 统计分析功能
+- ✅ 打印功能
+- ✅ Netlify 部署配置
