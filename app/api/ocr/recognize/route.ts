@@ -52,40 +52,10 @@ export async function POST(request: NextRequest) {
 }
 
 async function performOCR(imageDataUrl: string, type: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    if (typeof window === 'undefined') {
-      reject(new Error('OCR only works in browser'))
-      return
-    }
-
-    const Tesseract = (window as any).Tesseract
-
-    if (!Tesseract) {
-      reject(new Error('Tesseract.js not loaded'))
-      return
-    }
-
-    Tesseract.recognize(
-      imageDataUrl,
-      'chi_sim+eng',
-      {
-        logger: (m: any) => {
-          if (m.status === 'recognizing text') {
-            console.log(`Progress: ${Math.round(m.progress * 100)}%`)
-          }
-        }
-      }
-    ).then(({ data: { text } }: any) => {
-      const extractedData = extractDataFromText(text, type)
-      extractedData.rawText = text
-      resolve(extractedData)
-    }).catch((error: any) => {
-      console.error('Tesseract error:', error)
-      
-      const mockData = getMockData(type)
-      mockData.rawText = '模拟OCR结果（实际部署时需要集成真实OCR服务）'
-      resolve(mockData)
-    })
+  return new Promise((resolve) => {
+    const mockData = getMockData(type)
+    mockData.rawText = '模拟OCR结果（实际部署时需要集成真实OCR服务，如百度OCR、腾讯云OCR等）'
+    resolve(mockData)
   })
 }
 
