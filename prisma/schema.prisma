@@ -26,6 +26,8 @@ model MedicalRecord {
   id             String           @id @default(cuid())
   patientId      String
   patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  templateId     String?
+  template       MedicalTemplate? @relation(fields: [templateId], references: [id])
   chiefComplaint String
   presentIllness String
   pastHistory    String?
@@ -64,4 +66,16 @@ model ImageDocument {
   createdAt     DateTime         @default(now())
   patient       Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   record        MedicalRecord?   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+}
+
+model MedicalTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  department  String
+  fields      Json
+  rules       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  records     MedicalRecord[]
 }

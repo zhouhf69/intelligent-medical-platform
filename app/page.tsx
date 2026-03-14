@@ -214,6 +214,18 @@ export default function Home() {
                   图像识别
                 </Button>
               </Link>
+              <Link href="/fusion">
+                <Button variant="outline" size="sm">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  多模态融合
+                </Button>
+              </Link>
+              <Link href="/templates">
+                <Button variant="outline" size="sm">
+                  <FileText className="w-4 h-4 mr-2" />
+                  模版管理
+                </Button>
+              </Link>
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   <TrendingUp className="w-4 h-4 mr-2" />
