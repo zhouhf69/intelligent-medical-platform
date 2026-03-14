@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -41,7 +41,7 @@ model MedicalRecord {
   updatedAt      DateTime         @updatedAt
   recordings     AudioRecording[]
   images         ImageDocument[]
-  fusionData     Json?
+  fusionData     String?
 }
 
 model AudioRecording {
@@ -62,7 +62,7 @@ model ImageDocument {
   recordId      String?
   imageUrl      String
   type          String
-  extractedData Json
+  extractedData String
   createdAt     DateTime         @default(now())
   patient       Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   record        MedicalRecord?   @relation(fields: [recordId], references: [id], onDelete: Cascade)
@@ -73,8 +73,8 @@ model MedicalTemplate {
   name        String
   type        String
   department  String
-  fields      Json
-  rules       Json
+  fields      String
+  rules       String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   records     MedicalRecord[]
