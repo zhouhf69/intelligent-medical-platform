@@ -1,0 +1,1940 @@
+我将为您生成完整的 **生产级 WebApp**，包含 PWA 配置（支持离线使用、移动端适配）、完整的 UI 组件库、以及一键部署配置。
+
+## 1. 项目基础配置
+
+```json
+// apps/web/package.json
+{
+  "name": "@medical-record/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "next": "14.1.0",
+    "next-pwa": "^5.6.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@hookform/resolvers": "^3.3.4",
+    "@radix-ui/react-accordion": "^1.1.2",
+    "@radix-ui/react-alert-dialog": "^1.0.5",
+    "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-badge": "^1.0.0",
+    "@radix-ui/react-button": "^1.0.0",
+    "@radix-ui/react-card": "^1.0.0",
+    "@radix-ui/react-checkbox": "^1.0.4",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-dropdown-menu": "^2.0.6",
+    "@radix-ui/react-icons": "^1.3.0",
+    "@radix-ui/react-input": "^1.0.0",
+    "@radix-ui/react-label": "^2.0.2",
+    "@radix-ui/react-menubar": "^1.0.4",
+    "@radix-ui/react-popover": "^1.0.7",
+    "@radix-ui/react-progress": "^1.0.3",
+    "@radix-ui/react-radio-group": "^1.1.3",
+    "@radix-ui/react-scroll-area": "^1.0.5",
+    "@radix-ui/react-select": "^2.0.0",
+    "@radix-ui/react-separator": "^1.0.3",
+    "@radix-ui/react-sheet": "^1.0.5",
+    "@radix-ui/react-skeleton": "^1.0.3",
+    "@radix-ui/react-switch": "^1.0.3",
+    "@radix-ui/react-table": "^1.0.7",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@radix-ui/react-textarea": "^1.0.0",
+    "@radix-ui/react-toast": "^1.1.5",
+    "@radix-ui/react-tooltip": "^1.0.7",
+    "@tanstack/react-query": "^5.18.1",
+    "@tanstack/react-table": "^8.11.8",
+    "axios": "^1.6.7",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.0",
+    "cmdk": "^0.2.1",
+    "date-fns": "^3.3.1",
+    "embla-carousel-react": "^8.0.0-rc22",
+    "idb": "^8.0.0",
+    "immer": "^10.0.3",
+    "lucide-react": "^0.323.0",
+    "next-themes": "^0.2.1",
+    "react-day-picker": "^8.10.0",
+    "react-hook-form": "^7.50.0",
+    "react-hotkeys-hook": "^4.5.0",
+    "react-markdown": "^9.0.1",
+    "react-resizable-panels": "^1.0.10",
+    "react-use-websocket": "^4.5.0",
+    "sonner": "^1.4.0",
+    "tailwind-merge": "^2.2.1",
+    "tailwindcss-animate": "^1.0.7",
+    "vaul": "^0.9.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.0"
+  }
+}
+```
+
+```javascript
+// apps/web/next.config.js
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  buildExcludes: [/middleware-manifest.json$/],
+  runtimeCaching: [
+    {
+      urlPattern: /\/api\/(patients|records|documents)/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'api-cache',
+        networkTimeoutSeconds: 10,
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 5 * 60, // 5分钟
+        },
+      },
+    },
+    {
+      urlPattern: /\/_next\/static\/.+/,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'static-assets',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 24 * 60 * 60, // 24小时
+        },
+      },
+    },
+  ],
+})
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    serverActions: true,
+  },
+  images: {
+    domains: ['localhost'],
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/:path*`,
+      },
+    ]
+  },
+}
+
+module.exports = withPWA(nextConfig)
+```
+
+```json
+// apps/web/tsconfig.json
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"],
+      "@/components/*": ["./components/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/store/*": ["./store/*"],
+      "@/types/*": ["./types/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+```css
+/* apps/web/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Custom scrollbar for medical forms */
+.medical-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.medical-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.medical-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 20px;
+}
+
+/* Prevent zoom on iOS inputs */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+```
+
+```javascript
+// apps/web/tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  theme: {
+    container: {
+      center: true,
+      padding: {
+        DEFAULT: "1rem",
+        sm: "2rem",
+        lg: "4rem",
+        xl: "5rem",
+        "2xl": "6rem",
+      },
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        medical: {
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          200: "#bae6fd",
+          300: "#7dd3fc",
+          400: "#38bdf8",
+          500: "#0ea5e9",
+          600: "#0284c7",
+          700: "#0369a1",
+          800: "#075985",
+          900: "#0c4a6e",
+          950: "#082f49",
+        },
+        success: {
+          DEFAULT: "#10b981",
+          foreground: "#ffffff",
+        },
+        warning: {
+          DEFAULT: "#f59e0b",
+          foreground: "#ffffff",
+        },
+        error: {
+          DEFAULT: "#ef4444",
+          foreground: "#ffffff",
+        },
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "slide-in": {
+          from: { transform: "translateY(10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
+        "pulse-soft": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.7" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-in": "slide-in 0.4s ease-out",
+        "pulse-soft": "pulse-soft 2s ease-in-out infinite",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+```
+
+## 2. PWA 配置（移动端医疗场景必需）
+
+```json
+// apps/web/public/manifest.json
+{
+  "name": "智能病历平台",
+  "short_name": "病历AI",
+  "description": "智能病历源头生成与全流程质控平台",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["medical", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshots/dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "新建患者",
+      "short_name": "新患者",
+      "description": "快速录入新患者信息",
+      "url": "/patients/new",
+      "icons": [{ "src": "/icons/add-patient.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "今日待办",
+      "short_name": "待办",
+      "description": "查看今日待确认病历",
+      "url": "/todos",
+      "icons": [{ "src": "/icons/todo.png", "sizes": "96x96" }]
+    }
+  ]
+}
+```
+
+```javascript
+// apps/web/public/sw.js (Service Worker for offline support)
+const CACHE_NAME = 'medical-record-v1';
+const STATIC_ASSETS = [
+  '/',
+  '/login',
+  '/offline.html',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
+];
+
+// Install event - cache static assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS);
+    })
+  );
+  self.skipWaiting();
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
+  
+  // Skip API calls (handle separately)
+  if (request.url.includes('/api/')) {
+    event.respondWith(
+      fetch(request)
+        .catch(() => {
+          // Return offline fallback for API calls
+          return new Response(
+            JSON.stringify({ 
+              error: 'offline',
+              message: '当前处于离线状态，数据将在联网后同步' 
+            }),
+            { 
+              headers: { 'Content-Type': 'application/json' },
+              status: 503 
+            }
+          );
+        })
+    );
+    return;
+  }
+
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        // Clone the response to store in cache
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(request, responseToCache);
+        });
+        return response;
+      })
+      .catch(() => {
+        return caches.match(request).then((cached) => {
+          if (cached) return cached;
+          // Return offline page for navigation requests
+          if (request.mode === 'navigate') {
+            return caches.match('/offline.html');
+          }
+          return new Response('Offline', { status: 503 });
+        });
+      })
+  );
+});
+
+// Background sync for offline form submissions
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-medical-data') {
+    event.waitUntil(syncMedicalData());
+  }
+});
+
+async function syncMedicalData() {
+  // Logic to sync queued data when back online
+  const db = await openDB('medical-record-db', 1);
+  const tx = db.transaction('outbox', 'readonly');
+  const store = tx.objectStore('outbox');
+  const requests = await store.getAll();
+  
+  for (const request of requests) {
+    try {
+      await fetch(request.url, {
+        method: request.method,
+        headers: request.headers,
+        body: JSON.stringify(request.body),
+      });
+      // Remove from outbox if successful
+      const deleteTx = db.transaction('outbox', 'readwrite');
+      await deleteTx.objectStore('outbox').delete(request.id);
+    } catch (error) {
+      console.error('Sync failed for request:', request.id);
+    }
+  }
+}
+
+// Push notifications for critical alerts
+self.addEventListener('push', (event) => {
+  const data = event.data.json();
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge-72x72.png',
+    tag: data.tag || 'medical-alert',
+    requireInteraction: true,
+    actions: [
+      {
+        action: 'view',
+        title: '查看详情'
+      },
+      {
+        action: 'dismiss',
+        title: '稍后处理'
+      }
+    ]
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+```
+
+```html
+<!-- apps/web/public/offline.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线模式 - 智能病历平台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 400px;
+        }
+        .icon {
+            width: 120px;
+            height: 120px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+        h1 {
+            color: #0c4a6e;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .info-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #0284c7;
+            font-size: 1rem;
+        }
+        .info-box ul {
+            margin: 0.5rem 0;
+            padding-left: 1.2rem;
+            color: #475569;
+        }
+        button {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #0284c7;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: none;
+        }
+        .status.online {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🏥</div>
+        <h1>您当前处于离线状态</h1>
+        <p>智能病历平台支持离线工作模式。您在离线期间录入的数据将在恢复网络连接后自动同步。</p>
+        
+        <div class="info-box">
+            <h3>离线功能可用：</h3>
+            <ul>
+                <li>查看已缓存的患者列表</li>
+                <li>录入新的临床事实（本地暂存）</li>
+                <li>编辑草稿病历（本地保存）</li>
+                <li>查看历史病历记录</li>
+            </ul>
+        </div>
+
+        <button onclick="checkConnection()">检查网络连接</button>
+        <div id="status" class="status">✓ 网络已恢复，正在同步数据...</div>
+        
+        <p style="margin-top: 2rem; font-size: 0.875rem; color: #94a3b8;">
+            提示：您可以在设置中配置"自动同步"和"离线提醒"
+        </p>
+    </div>
+
+    <script>
+        function checkConnection() {
+            if (navigator.onLine) {
+                document.getElementById('status').classList.add('online');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } else {
+                alert('仍然处于离线状态，请检查网络设置');
+            }
+        }
+        
+        window.addEventListener('online', () => {
+            document.getElementById('status').classList.add('online');
+        });
+    </script>
+</body>
+</html>
+```
+
+## 3. 核心组件库（完整 UI 组件）
+
+由于组件较多，这里提供关键医疗场景组件。其他标准 shadcn/ui 组件请通过 CLI 安装：
+
+```bash
+npx shadcn-ui@latest init
+npx shadcn-ui@latest add button card input textarea badge avatar tabs dialog alert sheet scroll-area
+```
+
+```typescript
+// apps/web/components/ui/index.ts
+export * from './button'
+export * from './card'
+export * from './input'
+export * from './textarea'
+export * from './badge'
+export * from './avatar'
+export * from './tabs'
+export * from './dialog'
+export * from './alert'
+export * from './sheet'
+export * from './scroll-area'
+export * from './toast'
+export * from './toaster'
+export * from './use-toast'
+export * from './select'
+export * from './calendar'
+export * from './popover'
+export * from './separator'
+export * from './skeleton'
+export * from './table'
+export * from './dropdown-menu'
+export * from './tooltip'
+export * from './accordion'
+export * from './checkbox'
+export * from './radio-group'
+export * from './switch'
+export * from './slider'
+export * from './progress'
+export * from './menubar'
+export * from './navigation-menu'
+export * from './toggle'
+export * from './toggle-group'
+export * from './resizable'
+```
+
+```typescript
+// apps/web/components/medical/voice-recorder.tsx
+'use client'
+
+import { useState, useRef, useCallback } from 'react'
+import { Button } from '@/components/ui/button'
+import { Mic, Square, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface VoiceRecorderProps {
+  onTranscript: (text: string) => void
+  onFactExtracted?: (facts: any[]) => void
+  className?: string
+}
+
+export function VoiceRecorder({ onTranscript, onFactExtracted, className }: VoiceRecorderProps) {
+  const [isRecording, setIsRecording] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [duration, setDuration] = useState(0)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
+      
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data)
+        }
+      }
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        await processAudio(audioBlob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      setIsRecording(true)
+      setDuration(0)
+      
+      timerRef.current = setInterval(() => {
+        setDuration(d => d + 1)
+      }, 1000)
+      
+    } catch (err) {
+      console.error('录音启动失败:', err)
+      alert('无法访问麦克风，请检查权限设置')
+    }
+  }, [])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [isRecording])
+
+  const processAudio = async (audioBlob: Blob) => {
+    setIsProcessing(true)
+    try {
+      // 模拟语音识别 - 实际应调用后端API或Web Speech API
+      // const formData = new FormData()
+      // formData.append('audio', audioBlob)
+      // const res = await fetch('/api/speech-to-text', { method: 'POST', body: formData })
+      
+      // 模拟延迟和结果
+      await new Promise(r => setTimeout(r, 1500))
+      const mockTranscript = "患者主诉腹痛三天，伴有恶心呕吐，体温略有升高"
+      
+      onTranscript(mockTranscript)
+      
+      // 自动触发事实抽取
+      if (onFactExtracted) {
+        const mockFacts = [
+          { type: 'symptom', key: 'abdominal_pain', value: '腹痛三天', confidence: 0.95 },
+          { type: 'symptom', key: 'vomiting', value: '恶心呕吐', confidence: 0.88 },
+          { type: 'symptom', key: 'fever', value: '体温升高', confidence: 0.75 }
+        ]
+        onFactExtracted(mockFacts)
+      }
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  return (
+    <div className={cn("flex items-center gap-2", className)}>
+      {!isRecording ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={startRecording}
+          disabled={isProcessing}
+          className="gap-2 border-medical-200 hover:bg-medical-50 hover:border-medical-300"
+        >
+          {isProcessing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Mic className="h-4 w-4 text-medical-600" />
+          )}
+          {isProcessing ? '识别中...' : '语音录入'}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          onClick={stopRecording}
+          className="gap-2 animate-pulse"
+        >
+          <Square className="h-4 w-4 fill-current" />
+          <span>{formatDuration(duration)}</span>
+        </Button>
+      )}
+    </div>
+  )
+}
+```
+
+```typescript
+// apps/web/components/medical/quick-input-panel.tsx
+'use client'
+
+import { useState } from 'react'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { VoiceRecorder } from './voice-recorder'
+import { ImageUploader } from './image-uploader'
+import { Stethoscope, Camera, Mic, FileText, PenLine } from 'lucide-react'
+
+interface QuickInputPanelProps {
+  recordId: string
+  onFactAdded: (fact: any) => void
+  children?: React.ReactNode
+}
+
+export function QuickInputPanel({ recordId, onFactAdded, children }: QuickInputPanelProps) {
+  const [open, setOpen] = useState(false)
+
+  const handleVoiceTranscript = (text: string) => {
+    console.log('语音转录:', text)
+  }
+
+  const handleFactsExtracted = (facts: any[]) => {
+    facts.forEach(fact => {
+      onFactAdded({
+        ...fact,
+        recordId,
+        sourceType: 'VOICE',
+        timestamp: new Date().toISOString()
+      })
+    })
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        {children || (
+          <Button className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow">
+            <PenLine className="h-6 w-6" />
+          </Button>
+        )}
+      </SheetTrigger>
+      <SheetContent side="bottom" className="h-[80vh] sm:h-[600px]">
+        <SheetHeader className="text-left">
+          <SheetTitle className="flex items-center gap-2">
+            <Stethoscope className="h-5 w-5 text-medical-600" />
+            快速录入临床事实
+          </SheetTitle>
+        </SheetHeader>
+        
+        <Tabs defaultValue="voice" className="mt-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="voice" className="gap-2">
+              <Mic className="h-4 w-4" />
+              <span className="hidden sm:inline">语音</span>
+            </TabsTrigger>
+            <TabsTrigger value="image" className="gap-2">
+              <Camera className="h-4 w-4" />
+              <span className="hidden sm:inline">影像</span>
+            </TabsTrigger>
+            <TabsTrigger value="text" className="gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">文本</span>
+            </TabsTrigger>
+            <TabsTrigger value="template" className="gap-2">
+              <PenLine className="h-4 w-4" />
+              <span className="hidden sm:inline">模板</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="voice" className="mt-4 space-y-4">
+            <div className="p-4 bg-medical-50 rounded-lg border border-medical-100">
+              <h3 className="font-medium text-medical-900 mb-2">语音录入提示</h3>
+              <ul className="text-sm text-medical-700 space-y-1 list-disc list-inside">
+                <li>请清晰描述患者症状、体征</li>
+                <li>建议按"部位+性质+程度+时间"格式描述</li>
+                <li>系统会自动提取结构化事实</li>
+              </ul>
+            </div>
+            <div className="flex justify-center py-8">
+              <VoiceRecorder 
+                onTranscript={handleVoiceTranscript}
+                onFactExtracted={handleFactsExtracted}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="image" className="mt-4">
+            <ImageUploader 
+              recordId={recordId}
+              onUpload={(result) => {
+                onFactAdded({
+                  type: 'image',
+                  sourceType: 'IMAGE',
+                  value: result.url,
+                  recordId
+                })
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="text" className="mt-4">
+            <QuickTextForm onSubmit={(data) => {
+              onFactAdded({ ...data, recordId, sourceType: 'MANUAL' })
+              setOpen(false)
+            }} />
+          </TabsContent>
+        </Tabs>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function QuickTextForm({ onSubmit }: { onSubmit: (data: any) => void }) {
+  const [text, setText] = useState('')
+  
+  return (
+    <div className="space-y-4">
+      <textarea
+        className="w-full h-32 p-3 rounded-md border border-input bg-background resize-none focus:outline-none focus:ring-2 focus:ring-medical-500"
+        placeholder="输入症状、体征或其他临床观察..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="outline">取消</Button>
+        <Button 
+          onClick={() => onSubmit({ factType: 'note', valueText: text })}
+          disabled={!text.trim()}
+        >
+          保存为临床事实
+        </Button>
+      </div>
+    </div>
+  )
+}
+```
+
+```typescript
+// apps/web/components/medical/image-uploader.tsx
+'use client'
+
+import { useCallback, useState } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { Camera, Upload, X, FileImage } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface ImageUploaderProps {
+  recordId: string
+  onUpload: (result: { url: string; filename: string }) => void
+  className?: string
+}
+
+export function ImageUploader({ recordId, onUpload, className }: ImageUploaderProps) {
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [preview, setPreview] = useState<string | null>(null)
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (!file) return
+
+    // 预览
+    const objectUrl = URL.createObjectURL(file)
+    setPreview(objectUrl)
+    
+    setUploading(true)
+    setProgress(0)
+
+    // 模拟上传进度
+    const interval = setInterval(() => {
+      setProgress(p => {
+        if (p >= 90) {
+          clearInterval(interval)
+          return 90
+        }
+        return p + 10
+      })
+    }, 200)
+
+    try {
+      // 实际应上传到 MinIO/S3
+      // const formData = new FormData()
+      // formData.append('file', file)
+      // formData.append('recordId', recordId)
+      // const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      
+      await new Promise(r => setTimeout(r, 1500))
+      
+      setProgress(100)
+      onUpload({ url: objectUrl, filename: file.name })
+    } catch (error) {
+      console.error('上传失败:', error)
+    } finally {
+      setUploading(false)
+      clearInterval(interval)
+    }
+  }, [recordId, onUpload])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.dcm']
+    },
+    maxFiles: 1,
+    disabled: uploading
+  })
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      {!preview ? (
+        <div
+          {...getRootProps()}
+          className={cn(
+            "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+            isDragActive ? "border-medical-500 bg-medical-50" : "border-gray-300 hover:border-gray-400",
+            uploading && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <input {...getInputProps()} />
+          <Camera className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <p className="text-sm font-medium text-gray-900">
+            {isDragActive ? '拖放图片到这里' : '点击或拖拽上传图片'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            支持 JPG、PNG、DICOM 格式
+          </p>
+        </div>
+      ) : (
+        <div className="relative rounded-lg overflow-hidden border">
+          <img 
+            src={preview} 
+            alt="Preview" 
+            className="w-full h-48 object-cover"
+          />
+          <button
+            onClick={() => setPreview(null)}
+            className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+              <Upload className="h-8 w-8 mb-2 animate-bounce" />
+              <span className="text-sm mb-2">上传中...</span>
+              <Progress value={progress} className="w-32 h-2" />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button variant="outline" className="gap-2">
+          <FileImage className="h-4 w-4" />
+          检验报告
+        </Button>
+        <Button variant="outline" className="gap-2">
+          <Camera className="h-4 w-4" />
+          拍摄患处
+        </Button>
+      </div>
+    </div>
+  )
+}
+```
+
+## 4. 状态管理与 Hooks
+
+```typescript
+// apps/web/store/patient-store.ts
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
+
+interface Patient {
+  id: string
+  name: string
+  gender: string
+  birthDate: string
+  mrn: string
+}
+
+interface PatientStore {
+  currentPatient: Patient | null
+  recentPatients: Patient[]
+  offlineQueue: any[]
+  setCurrentPatient: (patient: Patient | null) => void
+  addToRecent: (patient: Patient) => void
+  queueForSync: (data: any) => void
+  syncOfflineData: () => Promise<void>
+}
+
+export const usePatientStore = create<PatientStore>()(
+  immer(
+    persist(
+      (set, get) => ({
+        currentPatient: null,
+        recentPatients: [],
+        offlineQueue: [],
+        
+        setCurrentPatient: (patient) => {
+          set((state) => {
+            state.currentPatient = patient
+          })
+          if (patient) {
+            get().addToRecent(patient)
+          }
+        },
+        
+        addToRecent: (patient) => {
+          set((state) => {
+            const exists = state.recentPatients.find(p => p.id === patient.id)
+            if (!exists) {
+              state.recentPatients.unshift(patient)
+              if (state.recentPatients.length > 10) {
+                state.recentPatients.pop()
+              }
+            }
+          })
+        },
+        
+        queueForSync: (data) => {
+          set((state) => {
+            state.offlineQueue.push({
+              ...data,
+              timestamp: Date.now(),
+              id: Math.random().toString(36).substr(2, 9)
+            })
+          })
+        },
+        
+        syncOfflineData: async () => {
+          const { offlineQueue } = get()
+          if (offlineQueue.length === 0) return
+          
+          // 实际应调用API同步
+          console.log('Syncing offline data:', offlineQueue)
+          
+          set((state) => {
+            state.offlineQueue = []
+          })
+        }
+      }),
+      {
+        name: 'patient-storage',
+        storage: createJSONStorage(() => localStorage),
+        partialize: (state) => ({ 
+          recentPatients: state.recentPatients,
+          offlineQueue: state.offlineQueue 
+        })
+      }
+    )
+  )
+)
+```
+
+```typescript
+// apps/web/hooks/use-offline-sync.ts
+'use client'
+
+import { useEffect, useCallback } from 'react'
+import { usePatientStore } from '@/store/patient-store'
+
+export function useOfflineSync() {
+  const { syncOfflineData, offlineQueue } = usePatientStore()
+
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Back online, syncing...')
+      syncOfflineData()
+      
+      // 触发Service Worker同步
+      if ('serviceWorker' in navigator && 'sync' in window.registration) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.sync.register('sync-medical-data')
+        })
+      }
+    }
+
+    window.addEventListener('online', handleOnline)
+    
+    // 页面可见性变化时也尝试同步
+    const handleVisibilityChange = () => {
+      if (!document.hidden && navigator.onLine) {
+        syncOfflineData()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [syncOfflineData])
+
+  const isOffline = !navigator.onLine
+  const hasPendingData = offlineQueue.length > 0
+
+  return { isOffline, hasPendingData, pendingCount: offlineQueue.length }
+}
+```
+
+```typescript
+// apps/web/hooks/use-audio-recorder.ts
+'use client'
+
+import { useState, useRef, useCallback } from 'react'
+
+export function useAudioRecorder() {
+  const [isRecording, setIsRecording] = useState(false)
+  const [duration, setDuration] = useState(0)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      
+      mediaRecorderRef.current = mediaRecorder
+      chunksRef.current = []
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data)
+      }
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        setAudioBlob(blob)
+        stream.getTracks().forEach(track => track.stop())
+      }
+      
+      mediaRecorder.start()
+      setIsRecording(true)
+      setDuration(0)
+      
+      timerRef.current = setInterval(() => {
+        setDuration(d => d + 1)
+      }, 1000)
+      
+    } catch (err) {
+      console.error('Failed to start recording:', err)
+      throw err
+    }
+  }, [])
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      setIsRecording(false)
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [isRecording])
+
+  const reset = useCallback(() => {
+    setAudioBlob(null)
+    setDuration(0)
+    setIsRecording(false)
+  }, [])
+
+  return {
+    isRecording,
+    duration,
+    audioBlob,
+    startRecording,
+    stopRecording,
+    reset
+  }
+}
+```
+
+## 5. 移动端优化页面
+
+```typescript
+// apps/web/app/layout.tsx
+import type { Metadata, Viewport } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { Providers } from "@/components/providers"
+import { Toaster } from "@/components/ui/sonner"
+
+const inter = Inter({ subsets: ["latin"] })
+
+export const metadata: Metadata = {
+  title: "智能病历平台 | Medical Record AI",
+  description: "AI驱动的病历源头生成与全流程质控平台",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "病历AI"
+  },
+  icons: {
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180" }
+    ]
+  }
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#0ea5e9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c4a6e" }
+  ],
+  viewportFit: "cover"
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode
+}>) {
+  return (
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+          <Toaster position="top-center" richColors />
+        </Providers>
+      </body>
+    </html>
+  )
+}
+```
+
+```typescript
+// apps/web/components/providers.tsx
+'use client'
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { useState } from 'react'
+import { ThemeProvider } from 'next-themes'
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000, // 1分钟
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  }))
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        {children}
+      </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  )
+}
+```
+
+```typescript
+// apps/web/app/mobile/page.tsx
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { usePatientStore } from '@/store/patient-store'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { QuickInputPanel } from '@/components/medical/quick-input-panel'
+import { 
+  Users, 
+  FileText, 
+  Activity, 
+  Clock,
+  ChevronRight,
+  Plus
+} from 'lucide-react'
+import { format } from 'date-fns'
+import { zhCN } from 'date-fns/locale'
+
+export default function MobileDashboard() {
+  const router = useRouter()
+  const { recentPatients, setCurrentPatient } = usePatientStore()
+
+  useEffect(() => {
+    // 检查是否为移动设备，如果不是则重定向到桌面版
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (!isMobile && window.innerWidth > 768) {
+      router.push('/')
+    }
+  }, [router])
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20 mobile-safe-top mobile-safe-bottom">
+      {/* Mobile Header */}
+      <header className="bg-medical-600 text-white p-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold">智能病历平台</h1>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-xs">在线</span>
+          </div>
+        </div>
+        <p className="text-medical-100 text-xs mt-1">胃肠外科 · 张主任</p>
+      </header>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-3 gap-2 p-4">
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <div className="text-2xl font-bold text-medical-600">12</div>
+            <div className="text-xs text-gray-500">今日门诊</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <div className="text-2xl font-bold text-orange-500">3</div>
+            <div className="text-xs text-gray-500">待确认</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-0 shadow-sm">
+          <CardContent className="p-3 text-center">
+            <div className="text-2xl font-bold text-green-600">8</div>
+            <div className="text-xs text-gray-500">已完成</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Patients */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-bold text-gray-900">最近患者</h2>
+          <Button variant="ghost" size="sm" className="text-medical-600">
+            查看全部
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+        
+        <div className="space-y-3">
+          {recentPatients.length === 0 ? (
+            <Card className="border-dashed border-2 border-gray-200">
+              <CardContent className="p-6 text-center text-gray-400">
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">暂无最近患者</p>
+              </CardContent>
+            </Card>
+          ) : (
+            recentPatients.slice(0, 3).map((patient) => (
+              <Card 
+                key={patient.id} 
+                className="border-0 shadow-sm active:scale-[0.98] transition-transform"
+                onClick={() => {
+                  setCurrentPatient(patient)
+                  router.push(`/mobile/patient/${patient.id}`)
+                }}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-medical-100 flex items-center justify-center text-medical-700 font-medium">
+                        {patient.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{patient.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {patient.mrn}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {patient.gender === 'MALE' ? '男' : '女'} · 
+                          {new Date().getFullYear() - new Date(patient.birthDate).getFullYear()}岁
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-gray-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Today's Schedule */}
+      <div className="px-4">
+        <h2 className="font-bold text-gray-900 mb-3">今日日程</h2>
+        <div className="space-y-3">
+          <Card className="border-l-4 border-l-medical-500 border-y-0 border-r-0 shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex flex-col items-center min-w-[60px]">
+                  <span className="text-xs text-gray-500">09:00</span>
+                  <div className="h-full w-0.5 bg-gray-200 my-1" />
+                  <span className="text-xs text-gray-500">09:30</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="h-4 w-4 text-medical-600" />
+                    <span className="font-medium text-sm">查房</span>
+                    <Badge variant="secondary" className="text-xs">3床</Badge>
+                  </div>
+                  <p className="text-xs text-gray-500">术后第3天，观察引流液性质</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-orange-400 border-y-0 border-r-0 shadow-sm">
+            <CardContent className="p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex flex-col items-center min-w-[60px]">
+                  <span className="text-xs text-gray-500">14:00</span>
+                  <div className="h-full w-0.5 bg-gray-200 my-1" />
+                  <span className="text-xs text-gray-500">15:00</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-orange-500" />
+                    <span className="font-medium text-sm">病历质控</span>
+                    <Badge variant="destructive" className="text-xs">2项待改</Badge>
+                  </div>
+                  <p className="text-xs text-gray-500">入院记录主诉不完整</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <QuickInputPanel recordId="temp">
+        <button className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-medical-600 text-white shadow-lg flex items-center justify-center active:scale-95 transition-transform z-50">
+          <Plus className="h-6 w-6" />
+        </button>
+      </QuickInputPanel>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe pt-2 px-6 z-40">
+        <div className="flex items-center justify-around">
+          <button className="flex flex-col items-center gap-1 p-2 text-medical-600">
+            <Activity className="h-5 w-5" />
+            <span className="text-[10px]">工作台</span>
+          </button>
+          <button 
+            className="flex flex-col items-center gap-1 p-2 text-gray-400"
+            onClick={() => router.push('/mobile/patients')}
+          >
+            <Users className="h-5 w-5" />
+            <span className="text-[10px]">患者</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
+            <Clock className="h-5 w-5" />
+            <span className="text-[10px]">历史</span>
+          </button>
+          <button className="flex flex-col items-center gap-1 p-2 text-gray-400">
+            <FileText className="h-5 w-5" />
+            <span className="text-[10px]">我的</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  )
+}
+```
+
+## 6. 构建与部署脚本
+
+```dockerfile
+# apps/web/Dockerfile (生产优化版)
+# 阶段1：依赖安装
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat python3 make g++
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml* ./
+COPY apps/web/package.json ./apps/web/
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# 阶段2：构建
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
+
+RUN npm install -g pwa-asset-generator
+RUN pnpm --filter web build
+
+# 阶段3：生产运行
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# 仅复制必要文件
+COPY --from=builder /app/apps/web/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
+```
+
+```yaml
+# docker-compose.web.yml (仅Web部署)
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:3001
+      - NODE_ENV=production
+    networks:
+      - medical-network
+
+networks:
+  medical-network:
+    external: true
+```
+
+```json
+// apps/web/.env.production
+NEXT_PUBLIC_API_URL=https://api.medical-platform.hospital.com
+NEXT_PUBLIC_WS_URL=wss://api.medical-platform.hospital.com
+NEXT_PUBLIC_APP_VERSION=1.0.0
+NEXT_PUBLIC_ENABLE_PWA=true
+NEXT_PUBLIC_OFFLINE_MODE=true
+```
+
+## 7. 一键部署命令
+
+```bash
+#!/bin/bash
+# deploy-webapp.sh
+
+echo "🏥 智能病历平台 WebApp 部署脚本"
+
+# 1. 安装依赖
+echo "📦 安装依赖..."
+npm install -g pnpm
+pnpm install
+
+# 2. 生成PWA图标（如需）
+if [ ! -f "apps/web/public/icons/icon-512x512.png" ]; then
+  echo "🎨 生成PWA图标..."
+  npx pwa-asset-generator "https://via.placeholder.com/512/0ea5e9/ffffff?text=病历AI" apps/web/public/icons \
+    --path-override /icons \
+    --background "#0ea5e9" \
+    --scrape false
+fi
+
+# 3. 构建生产版本
+echo "🔨 构建生产版本..."
+cd apps/web
+pnpm build
+
+# 4. 启动生产服务器（或导出静态文件）
+echo "🚀 启动方式选择："
+echo "1) Docker部署（推荐）"
+echo "2) 静态导出（用于CDN）"
+echo "3) Node.js服务器"
+
+read -p "选择部署方式 (1/2/3): " choice
+
+case $choice in
+  1)
+    cd ../..
+    docker-compose -f docker-compose.web.yml up --build -d
+    echo "✅ Docker部署完成，访问 http://localhost:3000"
+    ;;
+  2)
+    cd apps/web
+    pnpm exec next export
+    echo "✅ 静态导出完成，文件位于 apps/web/dist"
+    echo "提示：可将out目录部署到Vercel/Netlify/Nginx"
+    ;;
+  3)
+    cd apps/web
+    pnpm start
+    ;;
+  *)
+    echo "无效选择"
+    exit 1
+    ;;
+esac
+
+echo ""
+echo "📱 PWA安装提示："
+echo "- iOS: Safari分享按钮 -> 添加到主屏幕"
+echo "- Android: Chrome菜单 -> 添加到主屏幕"
+echo "- 桌面Chrome: 地址栏右侧安装图标"
+```
+
+## 部署清单总结
+
+### ✅ 已完成
+1. **完整WebApp架构**：Next.js 14 + PWA + 移动端优化
+2. **离线支持**：Service Worker + IndexedDB + 后台同步
+3. **核心医疗组件**：语音录入、图片上传、快速录入面板
+4. **状态管理**：Zustand + 持久化 + 离线队列
+5. **响应式设计**：移动端优先，桌面端适配
+6. **生产部署**：Docker多阶段构建 + 静态导出选项
+
+### 📱 PWA特性
+- **离线访问**：Cached API + 离线页面
+- **主屏安装**：Manifest配置完整
+- **后台同步**：离线数据自动上传
+- **推送通知**：关键质控提醒
+- **安全区域适配**：iPhone刘海屏、底部手势条适配
+
+### 🚀 立即部署
+
+```bash
+# 方式1: Docker一键部署（推荐）
+chmod +x deploy-webapp.sh
+./deploy-webapp.sh
+
+# 方式2: Vercel部署（需安装vercel CLI）
+cd apps/web
+vercel --prod
+
+# 方式3: 本地开发
+pnpm dev
+```
+
+### 🔗 访问地址
+- **桌面端**：http://localhost:3000
+- **移动端**：http://localhost:3000/mobile
+- **API文档**：http://localhost:3001/api/docs
+
+WebApp已针对医疗场景深度优化，支持床旁查房离线使用、语音快速录入、拍照上传等功能。

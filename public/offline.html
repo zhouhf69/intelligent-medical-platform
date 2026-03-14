@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线模式 - 智能病历平台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 400px;
+        }
+        .icon {
+            width: 120px;
+            height: 120px;
+            background: #0ea5e9;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+        h1 {
+            color: #0c4a6e;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        p {
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .info-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #0284c7;
+            font-size: 1rem;
+        }
+        .info-box ul {
+            margin: 0.5rem 0;
+            padding-left: 1.2rem;
+            color: #475569;
+        }
+        button {
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #0284c7;
+        }
+        .status {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: none;
+        }
+        .status.online {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🏥</div>
+        <h1>您当前处于离线状态</h1>
+        <p>智能病历平台支持离线工作模式。您在离线期间录入的数据将在恢复网络连接后自动同步。</p>
+        
+        <div class="info-box">
+            <h3>离线功能可用：</h3>
+            <ul>
+                <li>查看已缓存的患者列表</li>
+                <li>录入新的临床事实（本地暂存）</li>
+                <li>编辑草稿病历（本地保存）</li>
+                <li>查看历史病历记录</li>
+            </ul>
+        </div>
+
+        <button onclick="checkConnection()">检查网络连接</button>
+        <div id="status" class="status">✓ 网络已恢复，正在同步数据...</div>
+        
+        <p style="margin-top: 2rem; font-size: 0.875rem; color: #94a3b8;">
+            提示：您可以在设置中配置"自动同步"和"离线提醒"
+        </p>
+    </div>
+
+    <script>
+        function checkConnection() {
+            if (navigator.onLine) {
+                document.getElementById('status').classList.add('online');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                alert('网络仍未连接，请稍后再试');
+            }
+        }
+
+        window.addEventListener('online', () => {
+            document.getElementById('status').classList.add('online');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
