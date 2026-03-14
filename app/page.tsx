@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { FileText, Users, Calendar, Activity, Mic, Camera, Save, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react'
+import { FileText, Users, Calendar, Activity, Mic, Camera, Save, CheckCircle2, AlertCircle, TrendingUp, Sparkles } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 export default function Home() {
