@@ -36,11 +36,14 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
   },
+  devServer: {
+    port: 3003,
+  },
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/api/:path*`,
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'}/api/:path*`,
       },
     ]
   },
