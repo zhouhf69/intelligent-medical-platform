@@ -202,6 +202,18 @@ export default function Home() {
                   关于平台
                 </Button>
               </Link>
+              <Link href="/recording">
+                <Button variant="outline" size="sm">
+                  <Mic className="w-4 h-4 mr-2" />
+                  语音录音
+                </Button>
+              </Link>
+              <Link href="/ocr">
+                <Button variant="outline" size="sm">
+                  <Camera className="w-4 h-4 mr-2" />
+                  图像识别
+                </Button>
+              </Link>
               <Link href="/dashboard">
                 <Button variant="outline" size="sm">
                   <TrendingUp className="w-4 h-4 mr-2" />

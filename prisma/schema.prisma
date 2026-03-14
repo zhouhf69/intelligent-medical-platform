@@ -8,22 +8,24 @@ datasource db {
 }
 
 model Patient {
-  id            String   @id @default(cuid())
+  id            String           @id @default(cuid())
   name          String
   age           Int
   gender        String
   idCard        String?
   phone         String
   admissionDate DateTime
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
   records       MedicalRecord[]
+  recordings    AudioRecording[]
+  images        ImageDocument[]
 }
 
 model MedicalRecord {
-  id             String   @id @default(cuid())
+  id             String           @id @default(cuid())
   patientId      String
-  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   chiefComplaint String
   presentIllness String
   pastHistory    String?
@@ -32,7 +34,34 @@ model MedicalRecord {
   diagnosis      String
   treatment      String
   doctor         String?
-  status         String   @default("draft")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         String           @default("draft")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  recordings     AudioRecording[]
+  images         ImageDocument[]
+  fusionData     Json?
+}
+
+model AudioRecording {
+  id          String           @id @default(cuid())
+  patientId   String
+  recordId    String?
+  audioUrl    String
+  duration    Int
+  transcription String?
+  createdAt   DateTime         @default(now())
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  record      MedicalRecord?    @relation(fields: [recordId], references: [id], onDelete: Cascade)
+}
+
+model ImageDocument {
+  id            String           @id @default(cuid())
+  patientId     String
+  recordId      String?
+  imageUrl      String
+  type          String
+  extractedData Json
+  createdAt     DateTime         @default(now())
+  patient       Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  record        MedicalRecord?   @relation(fields: [recordId], references: [id], onDelete: Cascade)
 }
