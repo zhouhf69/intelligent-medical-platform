@@ -28,6 +28,9 @@ model MedicalRecord {
   patient        Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   templateId     String?
   template       MedicalTemplate? @relation(fields: [templateId], references: [id])
+  doctor         String?
+  doctorId       String?
+  doctorUser     User?            @relation(fields: [doctorId], references: [id])
   chiefComplaint String
   presentIllness String
   pastHistory    String?
@@ -35,13 +38,17 @@ model MedicalRecord {
   physicalExam   String
   diagnosis      String
   treatment      String
-  doctor         String?
   status         String           @default("draft")
+  qualityScore   Int?
+  qualityComment String?
+  aiSuggestions  String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   recordings     AudioRecording[]
   images         ImageDocument[]
   fusionData     String?
+  followUps      FollowUp[]
+  collaborations Collaboration[]
 }
 
 model AudioRecording {
@@ -75,6 +82,43 @@ model MedicalTemplate {
   department  String
   fields      String
   rules       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  records     MedicalRecord[]
+}
+
+model FollowUp {
+  id          String   @id @default(cuid())
+  recordId    String
+  record      MedicalRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  followUpDate DateTime
+  type        String
+  status      String   @default("pending")
+  notes       String?
+  outcome     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Collaboration {
+  id          String   @id @default(cuid())
+  recordId    String
+  record      MedicalRecord @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  department  String
+  doctor      String
+  comment     String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  password    String
+  role        String
+  department  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   records     MedicalRecord[]
