@@ -19,4 +19,4 @@ jobs:
           deploy-message: "Deploy from GitHub Actions"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: 9585d833-9bd5-40f7-b85c-3f84e4fbfb3b
+          NETLIFY_SITE_ID: 0815ba26-291a-48ec-b8d2-799635d953df

@@ -1,5 +1,5 @@
 [build]
-  command = "echo 'Static deployment'"
+  command = "echo 'Static site'"
   publish = "public"
 
 [build.environment]
